@@ -1,4 +1,4 @@
-# Okta Custom Login and Registration Form
+# Okta Demo OIDC for an e-shoppiong site
 
 This project was built using Python 2.7
 
