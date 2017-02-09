@@ -1,14 +1,16 @@
 /*price range*/
 
+if ($.isFunction($('#sl2').slider)) {
  $('#sl2').slider();
 
 	var RGBChange = function() {
 	  $('#RGB').css('background', 'rgb('+r.getValue()+','+g.getValue()+','+b.getValue()+')')
-	};	
-		
+	};
+}
 /*scroll to top*/
 
 $(document).ready(function(){
+	handleAuthSession();
 	$(function () {
 		$.scrollUp({
 	        scrollName: 'scrollUp', // Element ID
@@ -28,3 +30,12 @@ $(document).ready(function(){
 		});
 	});
 });
+
+function handleAuthSession() {
+	$.getJSON( "http://okta-demo-oidc-eshop-new-recinto.c9users.io/user", function( data ) {
+		if(data.active){
+			$("#login").html(data.username);
+		}
+	});
+
+}

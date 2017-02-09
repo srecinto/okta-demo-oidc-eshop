@@ -2,6 +2,7 @@ import os
 import json
 import requests
 import base64
+import config
 
 from flask import Flask, request, session, send_from_directory, redirect, make_response
 from requests.packages.urllib3.exceptions import InsecurePlatformWarning
@@ -15,11 +16,11 @@ GLOBAL VARIABLES ###############################################################
 app = Flask(__name__)
 app.secret_key = "6w_#w*~AVts3!*yd&C]jP0(x_1ssd]MVgzfAw8%fF+c@|ih0s1H&yZQC&-u~O[--"  # For the session
 
-okta_org = "https://myorg.okta.com"
-okta_api_token = "okta api token"
-okta_oauth_client_id = "okta oauth client id"
-okta_oauth_client_secret = "okta oauth clientsecret"
-okta_redirect_uri="my redirect uri"
+okta_org = config.okta["org"]
+okta_api_token = config.okta["api_token"]
+okta_oauth_client_id = config.okta["oauth_client_id"]
+okta_oauth_client_secret = config.okta["oauth_client_secret"]
+okta_redirect_uri = config.okta["redirect_uri"]
 
 
 """
@@ -38,6 +39,20 @@ def execute_post(url, body, headers):
 
     print "json: %s" % json.dumps(response_json, indent=4, sort_keys=True)
     return response_json
+
+
+def get_encoded_auth():
+    print "get_encoded_auth()"
+    auth_raw = "{client_id}:{client_secret}".format(
+                        client_id=okta_oauth_client_id,
+                        client_secret=okta_oauth_client_secret
+                    )
+
+    print "auth_raw: %s" % auth_raw
+    encoded_auth = base64.b64encode(auth_raw)
+    print "encoded_auth: %s" % encoded_auth
+
+    return encoded_auth
 
 
 def get_session_token(username, password):
@@ -100,19 +115,10 @@ def get_oauth_token(oauth_code):
         redirect_uri=okta_redirect_uri
     )
 
-    auth_raw = "{client_id}:{client_secret}".format(
-                        client_id=okta_oauth_client_id,
-                        client_secret=okta_oauth_client_secret
-                    )
-
-    print "auth_raw: %s" % auth_raw
-    encoded_auth = base64.b64encode(auth_raw)
-    print "encoded_auth: %s" % encoded_auth
-
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/x-www-form-urlencoded",
-        "Authorization": "Basic {encoded_auth}".format(encoded_auth=encoded_auth)
+        "Authorization": "Basic {encoded_auth}".format(encoded_auth=get_encoded_auth())
     }
 
     body = {
@@ -122,6 +128,29 @@ def get_oauth_token(oauth_code):
     oauth_token_response_json = execute_post(url, body, headers)
 
     return oauth_token_response_json["access_token"]
+
+def introspect_oauth_token(oauth_token):
+    url = (
+        "{host}/oauth2/v1/introspect?"
+        "token={token}"
+    ).format(
+        host=okta_org,
+        token=oauth_token
+    )
+
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Authorization": "Basic {encoded_auth}".format(encoded_auth=get_encoded_auth())
+    }
+
+    body = {}
+
+    oauth_token_response_json = execute_post(url, body, headers)
+
+    return oauth_token_response_json
+
+
 
 """
 ROUTES ##################################################################################################################
@@ -166,6 +195,28 @@ def oidc():
     response.set_cookie('token', oauth_token)
     return response
 
+
+@app.route("/user", methods=["GET"])
+def user():
+
+    user_results_json = None
+
+    if("token" in request.cookies):
+        introspection_results_json = introspect_oauth_token(request.cookies.get("token"))
+
+        if("active" in introspection_results_json):
+            user_results_json = {
+                "active": introspection_results_json["active"],
+                "username": introspection_results_json["username"]
+            }
+
+
+    if(not user_results_json):
+        user_results_json = {
+            "active": False
+        }
+
+    return json.dumps(user_results_json)
 
 @app.route("/", methods=["GET"])
 def root():
