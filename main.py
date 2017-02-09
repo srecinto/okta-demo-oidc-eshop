@@ -194,7 +194,7 @@ def oidc():
     print request.form
 
     if("error" in request.form):
-        oauth_token = ""
+        oauth_token = "NO_TOKEN"
     else:
         oidc_code = request.form["code"]
         print "oidc_code: %s" % oidc_code
@@ -214,11 +214,20 @@ def user():
         introspection_results_json = introspect_oauth_token(request.cookies.get("token"))
 
         if("active" in introspection_results_json):
-            user_results_json = {
-                "active": introspection_results_json["active"],
-                "username": introspection_results_json["username"]
-            }
+            if(introspection_results_json["active"]):
+                print "Has active token"
+                user_results_json = {
+                    "active": introspection_results_json["active"],
+                    "username": introspection_results_json["username"]
+                }
+            else:
+                print "Has inactive token"
+        else:
+            print "has inactive token error"
+
+
     else:
+        print "has no token"
         check_okta_session_url = create_oidc_auth_code_url(None)
         user_results_json = {
             "active": False,
@@ -226,11 +235,13 @@ def user():
         }
 
     if(not user_results_json):
+        print "has no token default"
         user_results_json = {
             "active": False
         }
 
     return json.dumps(user_results_json)
+
 
 @app.route("/", methods=["GET"])
 def root():
