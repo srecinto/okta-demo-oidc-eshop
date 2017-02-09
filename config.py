@@ -1,5 +1,5 @@
 okta = {
-    "org": "https://myorg.okta.com",
+    "org": "",
     "api_token": "",
     "oauth_client_id": "",
     "oauth_client_secret": "",

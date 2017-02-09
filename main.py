@@ -4,7 +4,7 @@ import requests
 import base64
 import config
 
-from flask import Flask, request, session, send_from_directory, redirect, make_response
+from flask import Flask, request, send_from_directory, redirect, make_response
 from requests.packages.urllib3.exceptions import InsecurePlatformWarning
 from requests.packages.urllib3.exceptions import SNIMissingWarning
 
@@ -44,9 +44,9 @@ def execute_post(url, body, headers):
 def get_encoded_auth():
     print "get_encoded_auth()"
     auth_raw = "{client_id}:{client_secret}".format(
-                        client_id=okta_oauth_client_id,
-                        client_secret=okta_oauth_client_secret
-                    )
+        client_id=okta_oauth_client_id,
+        client_secret=okta_oauth_client_secret
+    )
 
     print "auth_raw: %s" % auth_raw
     encoded_auth = base64.b64encode(auth_raw)
@@ -81,8 +81,9 @@ def get_session_token(username, password):
 
     return authn_reponse_json["sessionToken"]
 
+
 def create_oidc_auth_code_url(session_token):
-    session_option =""
+    session_option = ""
 
     if (session_token):
         session_option = "&sessionToken={session_token}".format(session_token=session_token)
@@ -134,6 +135,7 @@ def get_oauth_token(oauth_code):
 
     return oauth_token_response_json["access_token"]
 
+
 def introspect_oauth_token(oauth_token):
     url = (
         "{host}/oauth2/v1/introspect?"
@@ -154,7 +156,6 @@ def introspect_oauth_token(oauth_token):
     oauth_token_response_json = execute_post(url, body, headers)
 
     return oauth_token_response_json
-
 
 
 """
@@ -185,7 +186,7 @@ def login():
         return redirect(oidc_auth_code_url)
 
     else:
-        return serve_static_html("login.html");
+        return serve_static_html("login.html")
 
 
 @app.route("/oidc", methods=["POST"])
@@ -224,8 +225,6 @@ def user():
                 print "Has inactive token"
         else:
             print "has inactive token error"
-
-
     else:
         print "has no token"
         check_okta_session_url = create_oidc_auth_code_url(None)
