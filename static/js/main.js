@@ -32,9 +32,13 @@ $(document).ready(function(){
 });
 
 function handleAuthSession() {
-	$.getJSON( "http://okta-demo-oidc-eshop-new-recinto.c9users.io/user", function( data ) {
+	$.getJSON( "https://okta-demo-oidc-eshop-new-recinto.c9users.io/user", function( data ) {
 		if(data.active){
 			$("#login").html(data.username);
+		} else{
+			if(data.redirect_url){
+				location.href = data.redirect_url
+			}
 		}
 	});
 

@@ -82,6 +82,11 @@ def get_session_token(username, password):
     return authn_reponse_json["sessionToken"]
 
 def create_oidc_auth_code_url(session_token):
+    session_option =""
+
+    if (session_token):
+        session_option = "&sessionToken={session_token}".format(session_token=session_token)
+
     url = (
         "{host}/oauth2/v1/authorize?"
         "response_type=code&"
@@ -91,13 +96,13 @@ def create_oidc_auth_code_url(session_token):
         "nonce=n-0S6_WzA2Mj&"
         "response_mode=form_post&"
         "prompt=none&"
-        "scope=openid&"
-        "sessionToken={session_token}"
+        "scope=openid"
+        "{session_option}"
     ).format(
         host=okta_org,
         clint_id=okta_oauth_client_id,
         redirect_uri=okta_redirect_uri,
-        session_token=session_token
+        session_option=session_option
     )
     return url
 
@@ -187,11 +192,15 @@ def login():
 def oidc():
     print "oidc()"
     print request.form
-    oidc_code = request.form["code"]
-    print "oidc_code: %s" % oidc_code
-    oauth_token = get_oauth_token(oidc_code)
 
-    response = make_response(redirect('index.html'))
+    if("error" in request.form):
+        oauth_token = ""
+    else:
+        oidc_code = request.form["code"]
+        print "oidc_code: %s" % oidc_code
+        oauth_token = get_oauth_token(oidc_code)
+
+    response = make_response(redirect("https://okta-demo-oidc-eshop-new-recinto.c9users.io/index.html"))
     response.set_cookie('token', oauth_token)
     return response
 
@@ -209,7 +218,12 @@ def user():
                 "active": introspection_results_json["active"],
                 "username": introspection_results_json["username"]
             }
-
+    else:
+        check_okta_session_url = create_oidc_auth_code_url(None)
+        user_results_json = {
+            "active": False,
+            "redirect_url": check_okta_session_url
+        }
 
     if(not user_results_json):
         user_results_json = {
